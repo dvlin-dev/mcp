@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mcp-image-gen",
+  "main": "src/transports/worker.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "DEFAULT_MODEL": "google/gemini-2.0-flash-exp:free"
+  }
+}
