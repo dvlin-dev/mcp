@@ -1,5 +1,6 @@
 import path from 'node:path'
 import type { Logger } from '../logger.js'
+import type { ScriptLanguage } from '../executor/osascript-executor.js'
 import { loadKnowledgeFromPath } from './loader.js'
 import { searchTemplates } from './search.js'
 import type { KnowledgeIndex, KnowledgeTemplate } from './types.js'
@@ -121,5 +122,13 @@ export class KnowledgeManager {
   async getTemplateById(templateId: string): Promise<KnowledgeTemplate | null> {
     const index = await this.load()
     return index.templates.find((item) => item.id === templateId) ?? null
+  }
+
+  async getSharedHandlers(language?: ScriptLanguage) {
+    const index = await this.load()
+    const filtered = language
+      ? index.sharedHandlers.filter((handler) => handler.language === language)
+      : index.sharedHandlers
+    return [...filtered].sort((a, b) => a.name.localeCompare(b.name))
   }
 }

@@ -33,6 +33,11 @@ function makeContext(options: {
     language: 'applescript' | 'javascript'
     script: string
   } | null
+  sharedHandlers?: Array<{
+    name: string
+    language: 'applescript' | 'javascript'
+    content: string
+  }>
   executeImpl?: (params: unknown) => Promise<{
     stdout: string
     stderr: string
@@ -45,6 +50,8 @@ function makeContext(options: {
     queue: new SerialTaskQueue(),
     knowledge: {
       getTemplateById: async (_id: string) => options.template ?? null,
+      getSharedHandlers: async (_language?: 'applescript' | 'javascript') =>
+        options.sharedHandlers ?? [],
     },
     executor: {
       execute:
@@ -89,6 +96,41 @@ test('executeTemplate: 执行成功返回 stdout/stderr', async () => {
   })
   assert.equal(result.ok, true)
   assert.equal((result.data as any).stdout, 'hello')
+})
+
+test('executeTemplate: 会注入同语言 shared handlers 再执行模板', async () => {
+  let receivedScript = ''
+  const context = makeContext({
+    template: {
+      id: 't-handler',
+      category: 'system',
+      language: 'applescript',
+      script: 'return helperText()',
+    },
+    sharedHandlers: [
+      {
+        name: 'helper_text',
+        language: 'applescript',
+        content: 'on helperText()\n  return "ok"\nend helperText',
+      },
+    ],
+    executeImpl: async (params: unknown) => {
+      receivedScript = String((params as { scriptContent?: string }).scriptContent ?? '')
+      return {
+        stdout: 'hello-with-handler',
+        stderr: '',
+        executionTimeSeconds: 0.01,
+      }
+    },
+  })
+
+  const result = await executeTemplate({
+    context,
+    templateId: 't-handler',
+  })
+  assert.equal(result.ok, true)
+  assert.match(receivedScript, /on helperText\(\)/)
+  assert.match(receivedScript, /return helperText\(\)/)
 })
 
 test('executeTemplate: 权限错误映射为 PERMISSION_DENIED', async () => {

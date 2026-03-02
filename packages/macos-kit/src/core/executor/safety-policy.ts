@@ -11,6 +11,10 @@ const HIGH_RISK_PATTERNS: RegExp[] = [
   /reboot/i,
 ]
 
+function isBinaryScript(buffer: Buffer): boolean {
+  return buffer.includes(0)
+}
+
 function isSubPath(parentPath: string, targetPath: string): boolean {
   const relative = path.relative(parentPath, targetPath)
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
@@ -68,7 +72,14 @@ export async function validateRawExecutionSafety(options: {
       }
 
       if (config.MACOS_KIT_SAFE_MODE !== 'off' && !contentForRiskScan) {
-        contentForRiskScan = await fs.readFile(scriptPath, 'utf8')
+        const scriptBuffer = await fs.readFile(scriptPath)
+        if (isBinaryScript(scriptBuffer)) {
+          return buildFailure('SAFETY_BLOCKED', '安全模式不允许执行二进制脚本文件', {
+            hint: '请改用可读文本脚本，或将 MACOS_KIT_SAFE_MODE 设置为 off',
+            retryable: false,
+          })
+        }
+        contentForRiskScan = scriptBuffer.toString('utf8')
       }
     } catch (error) {
       return buildFailure('INVALID_INPUT', '脚本路径不可读或不存在', {

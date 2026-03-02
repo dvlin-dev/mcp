@@ -82,6 +82,17 @@ function normalizeTimeoutSeconds(
   return Math.min(candidate, context.config.MACOS_KIT_MAX_TIMEOUT_SECONDS)
 }
 
+function mergeSharedHandlers(options: {
+  templateScript: string
+  sharedHandlers: Array<{ content: string }>
+}): string {
+  const sections = options.sharedHandlers
+    .map((handler) => handler.content.trim())
+    .filter(Boolean)
+  sections.push(options.templateScript)
+  return sections.join('\n\n')
+}
+
 export async function executeTemplate(options: {
   context: ToolRuntimeContext
   templateId: string
@@ -98,8 +109,14 @@ export async function executeTemplate(options: {
     })
   }
 
+  const sharedHandlers = await context.knowledge.getSharedHandlers(template.language)
+  const mergedScript = mergeSharedHandlers({
+    templateScript: template.script,
+    sharedHandlers,
+  })
+
   const scriptContent = substitutePlaceholders({
-    scriptContent: template.script,
+    scriptContent: mergedScript,
     language: template.language,
     inputData,
     args,
