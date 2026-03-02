@@ -45,6 +45,7 @@ export async function validateRawExecutionSafety(options: {
   scriptPath?: string
 }): Promise<ContractResponse<null> | null> {
   const { config, scriptContent, scriptPath } = options
+  let contentForRiskScan = scriptContent
 
   if (!config.MACOS_KIT_ENABLE_RAW_SCRIPT) {
     return buildFailure('FEATURE_DISABLED', 'run_macos_script 未开启', {
@@ -65,6 +66,10 @@ export async function validateRawExecutionSafety(options: {
           retryable: false,
         })
       }
+
+      if (config.MACOS_KIT_SAFE_MODE !== 'off' && !contentForRiskScan) {
+        contentForRiskScan = await fs.readFile(scriptPath, 'utf8')
+      }
     } catch (error) {
       return buildFailure('INVALID_INPUT', '脚本路径不可读或不存在', {
         hint: error instanceof Error ? error.message : '请检查路径是否正确',
@@ -73,8 +78,10 @@ export async function validateRawExecutionSafety(options: {
     }
   }
 
-  if (config.MACOS_KIT_SAFE_MODE !== 'off' && scriptContent) {
-    const hitPattern = HIGH_RISK_PATTERNS.find((pattern) => pattern.test(scriptContent))
+  if (config.MACOS_KIT_SAFE_MODE !== 'off' && contentForRiskScan) {
+    const hitPattern = HIGH_RISK_PATTERNS.find((pattern) =>
+      pattern.test(contentForRiskScan)
+    )
     if (hitPattern) {
       return buildFailure('SAFETY_BLOCKED', '脚本命中高风险策略阻断', {
         hint: `命中规则: ${hitPattern}`,

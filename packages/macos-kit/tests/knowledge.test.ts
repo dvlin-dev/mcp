@@ -166,3 +166,30 @@ test('searchTemplates 支持分类过滤与 limit', () => {
   assert.equal(byQuery.length, 1)
   assert.equal(byQuery[0].id, 'system_a')
 })
+
+test('mail_get_email 模板会消费 account 参数并按账户筛选', async () => {
+  const templatePath = path.join(
+    process.cwd(),
+    'knowledge-base',
+    'mail',
+    'mail_get_email.md'
+  )
+  const content = await fs.readFile(templatePath, 'utf8')
+  assert.match(content, /set accountName to --MCP_INPUT:account/)
+  assert.match(content, /exists account accountName/)
+  assert.match(content, /mailbox mailboxName of targetAccount/)
+})
+
+test('messages_search_messages 模板会转义 SQL LIKE 输入并支持 chat_id 过滤', async () => {
+  const templatePath = path.join(
+    process.cwd(),
+    'knowledge-base',
+    'messages',
+    'messages_search_messages.md'
+  )
+  const content = await fs.readFile(templatePath, 'utf8')
+  assert.match(content, /on escapeSqlLikeValue\(inputText\)/)
+  assert.match(content, /replaceText\(\"'\", \"''\", inputText\)/)
+  assert.match(content, /set escapedChatFilter to my escapeSqlLikeValue\(chatFilter\)/)
+  assert.match(content, /chat\.chat_identifier/)
+})

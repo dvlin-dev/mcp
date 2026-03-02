@@ -10,11 +10,27 @@ argumentsPrompt: 无
 set matchSubject to --MCP_INPUT:subject
 set matchSender to --MCP_INPUT:sender
 set mailboxName to --MCP_INPUT:mailbox
+set accountName to --MCP_INPUT:account
 set unreadOnly to --MCP_INPUT:unread_only
 set includeBody to --MCP_INPUT:include_body
 
 tell application "Mail"
-  if exists mailbox mailboxName then
+  if accountName is not "" then
+    if not (exists account accountName) then
+      error "account_not_found: " & accountName
+    end if
+
+    set targetAccount to account accountName
+    if mailboxName is "" or mailboxName is "INBOX" then
+      set targetMessages to messages of inbox of targetAccount
+    else if exists mailbox mailboxName of targetAccount then
+      set targetMessages to messages of mailbox mailboxName of targetAccount
+    else
+      error "mailbox_not_found_in_account: " & mailboxName & " @ " & accountName
+    end if
+  else if mailboxName is "" or mailboxName is "INBOX" then
+    set targetMessages to messages of inbox
+  else if exists mailbox mailboxName then
     set targetMessages to messages of mailbox mailboxName
   else
     set targetMessages to messages of inbox
