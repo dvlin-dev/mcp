@@ -34,6 +34,9 @@ test('loadConfigFromEnv 使用默认值并解析布尔与路径', () => {
       MACOS_KIT_LOG_LEVEL: undefined,
       MACOS_KIT_ENABLE_AX_QUERY: 'yes',
       MACOS_KIT_AX_BINARY_PATH: undefined,
+      MACOS_KIT_AX_AUTO_INSTALL: undefined,
+      MACOS_KIT_AX_DOWNLOAD_URL: undefined,
+      MACOS_KIT_AX_CACHE_DIR: undefined,
     },
     () => {
       const config = loadConfigFromEnv()
@@ -45,6 +48,9 @@ test('loadConfigFromEnv 使用默认值并解析布尔与路径', () => {
       assert.equal(config.MACOS_KIT_LOG_LEVEL, 'info')
       assert.equal(config.MACOS_KIT_ENABLE_AX_QUERY, true)
       assert.equal(config.MACOS_KIT_AX_BINARY_PATH, 'ax')
+      assert.equal(config.MACOS_KIT_AX_AUTO_INSTALL, true)
+      assert.equal(config.MACOS_KIT_AX_DOWNLOAD_URL, undefined)
+      assert.equal(config.MACOS_KIT_AX_CACHE_DIR, undefined)
     }
   )
 })
@@ -60,6 +66,9 @@ test('loadConfigFromEnv 零配置默认宽松', () => {
       MACOS_KIT_LOG_LEVEL: undefined,
       MACOS_KIT_ENABLE_AX_QUERY: undefined,
       MACOS_KIT_AX_BINARY_PATH: undefined,
+      MACOS_KIT_AX_AUTO_INSTALL: undefined,
+      MACOS_KIT_AX_DOWNLOAD_URL: undefined,
+      MACOS_KIT_AX_CACHE_DIR: undefined,
     },
     () => {
       const config = loadConfigFromEnv()
@@ -67,6 +76,7 @@ test('loadConfigFromEnv 零配置默认宽松', () => {
       assert.equal(config.MACOS_KIT_ENABLE_AX_QUERY, true)
       assert.equal(config.MACOS_KIT_SAFE_MODE, 'balanced')
       assert.deepEqual(config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS, [])
+      assert.equal(config.MACOS_KIT_AX_AUTO_INSTALL, true)
     }
   )
 })

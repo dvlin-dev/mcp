@@ -48,8 +48,11 @@
    - 未配置白名单时，`script_path` 不做目录限制；
    - 配置白名单后，继续执行 realpath + 子路径校验。
 3. 启动时增加宽松模式告警日志，明确当前安全姿态。
-4. 同步更新 README 与技术方案中的默认值说明。
-5. 补充/调整测试，覆盖新默认值与白名单按需生效行为。
+4. AX 依赖改为运行时处理（不走 postinstall）：
+   - MCP 启动后预热检查并按配置尝试自动下载；
+   - `accessibility_query` 调用前再兜底检查。
+5. 同步更新 README 与技术方案中的默认值说明。
+6. 补充/调整测试，覆盖新默认值与白名单按需生效行为。
 
 风险说明：
 
@@ -66,8 +69,9 @@
    - 未配置白名单时允许 `script_path`；
    - 配置后继续执行 realpath 子路径校验。
 3. ✅ 已在 server 启动阶段增加宽松模式告警日志。
-4. ✅ 已同步 README 与技术方案默认值说明。
-5. ✅ 已补充测试并验证通过（累计新增 5 个用例，macos-kit 总测试 44/44 通过）。
+4. ✅ 已实现 AX 运行时自动安装策略（启动预热 + 调用兜底，未引入 postinstall）。
+5. ✅ 已同步 README 与技术方案默认值说明。
+6. ✅ 已补充测试并验证通过（累计新增 5 个用例，macos-kit 总测试 44/44 通过）。
 
 ## 一、背景与目标
 
@@ -247,6 +251,9 @@ packages/macos-kit/
 - `MACOS_KIT_LOG_LEVEL`：`debug | info | warn | error`
 - `MACOS_KIT_ENABLE_AX_QUERY`：是否开启 AX 工具（默认 `true`）
 - `MACOS_KIT_AX_BINARY_PATH`：AX 可执行文件路径（可选）
+- `MACOS_KIT_AX_AUTO_INSTALL`：是否开启 AX 自动安装（默认 `true`）
+- `MACOS_KIT_AX_DOWNLOAD_URL`：AX 下载地址模板（可选，支持 `{platform}`、`{arch}` 占位符）
+- `MACOS_KIT_AX_CACHE_DIR`：AX 缓存目录（可选）
 
 ### 6.2 安全分层策略
 
@@ -258,12 +265,21 @@ packages/macos-kit/
    - `off`：不做内容风险扫描
 4. 所有 raw 执行产生日志审计（来源、参数摘要、耗时、结果码）。
 
-### 6.3 并发策略
+### 6.3 AX 依赖策略（安装后不阻塞）
+
+1. 不使用 `postinstall` 下载 AX，避免影响 MCP 安装超时窗口。
+2. MCP 启动时触发 AX 预热检查：
+   - 已存在可执行文件则复用；
+   - 缺失时若配置下载地址则自动下载到缓存目录。
+3. `accessibility_query` 执行前再次兜底检查，提升首次调用成功率。
+4. 自动下载失败不阻塞 server 启动，仅在调用时返回可操作错误提示。
+
+### 6.4 并发策略
 
 - 执行器默认串行队列（防 UI 自动化冲突）。
 - 二期支持按 app 维度互斥锁（可选优化）。
 
-### 6.4 统一输出契约
+### 6.5 统一输出契约
 
 - MCP 返回：
   - `content: [{ type: "text", text: "<json-string>" }]`

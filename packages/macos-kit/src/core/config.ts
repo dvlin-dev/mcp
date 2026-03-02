@@ -46,6 +46,13 @@ export const AppConfigSchema = z.object({
     .transform((value) => parseBoolean(value))
     .default(true),
   MACOS_KIT_AX_BINARY_PATH: z.string().default('ax'),
+  MACOS_KIT_AX_AUTO_INSTALL: z
+    .any()
+    .optional()
+    .transform((value) => parseBoolean(value))
+    .default(true),
+  MACOS_KIT_AX_DOWNLOAD_URL: z.string().optional(),
+  MACOS_KIT_AX_CACHE_DIR: z.string().optional(),
 })
 
 export type AppConfig = z.infer<typeof AppConfigSchema> & {

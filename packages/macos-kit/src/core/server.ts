@@ -6,6 +6,7 @@ import type { AppConfig } from './config.js'
 import { Logger } from './logger.js'
 import { OsaScriptExecutor } from './executor/osascript-executor.js'
 import { SerialTaskQueue } from './executor/queue.js'
+import { prewarmAxBinary } from './executor/ax-binary.js'
 import { KnowledgeManager } from './knowledge/manager.js'
 import { registerAllTools } from './tools/index.js'
 
@@ -57,6 +58,14 @@ export function createMcpServer(config: AppConfig): McpServer {
       embeddedRoot: embeddedKbRoot,
       localOverrideRoot: config.MACOS_KIT_KB_PATH,
     }),
+  }
+
+  if (config.MACOS_KIT_ENABLE_AX_QUERY) {
+    void prewarmAxBinary({ config, logger }).catch((error) => {
+      logger.warn('AX 预热流程异常', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    })
   }
 
   registerAllTools(server, runtime)
