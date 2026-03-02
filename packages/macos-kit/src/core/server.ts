@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -25,8 +26,14 @@ export function createMcpServer(config: AppConfig): McpServer {
   const logger = new Logger(config.MACOS_KIT_LOG_LEVEL, 'macos-kit')
 
   const __filename = fileURLToPath(import.meta.url)
-  const packageRoot = path.resolve(path.dirname(__filename), '../..')
-  const embeddedKbRoot = path.join(packageRoot, 'knowledge-base')
+  const moduleDir = path.dirname(__filename)
+  const embeddedKbCandidates = [
+    path.resolve(moduleDir, '../../knowledge-base'),
+    path.resolve(moduleDir, '../../../knowledge-base'),
+  ]
+  const embeddedKbRoot =
+    embeddedKbCandidates.find((candidate) => fs.existsSync(candidate)) ??
+    embeddedKbCandidates[0]
 
   const runtime: ToolRuntimeContext = {
     config,

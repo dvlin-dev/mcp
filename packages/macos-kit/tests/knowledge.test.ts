@@ -193,3 +193,16 @@ test('messages_search_messages 模板会转义 SQL LIKE 输入并支持 chat_id 
   assert.match(content, /set escapedChatFilter to my escapeSqlLikeValue\(chatFilter\)/)
   assert.match(content, /chat\.chat_identifier/)
 })
+
+test('finder search_files 模板会将 ~ 解析为主目录路径', async () => {
+  const templatePath = path.join(
+    process.cwd(),
+    'knowledge-base',
+    'finder',
+    'search_files.md'
+  )
+  const content = await fs.readFile(templatePath, 'utf8')
+  assert.match(content, /if locationPath is "~" then/)
+  assert.ok(content.includes('locationPath starts with "~/" then'))
+  assert.match(content, /POSIX path of \(path to home folder\)/)
+})

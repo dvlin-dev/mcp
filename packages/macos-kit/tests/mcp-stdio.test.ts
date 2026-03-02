@@ -6,7 +6,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 interface ContractResponse {
   ok: boolean
-  data: unknown
+  data: Record<string, unknown> | null
   error: { code: string; message: string } | null
 }
 
@@ -49,6 +49,8 @@ test('stdio 集成：工具列表与基础调用可用', async () => {
     })
     const listPayload = parseContractResponse(listResult)
     assert.equal(listPayload.ok, true)
+    const categories = (listPayload.data?.categories as unknown[]) ?? []
+    assert.ok(categories.length > 0)
 
     const searchResult = await client.callTool({
       name: 'search_macos_automation_tips',
@@ -59,6 +61,8 @@ test('stdio 集成：工具列表与基础调用可用', async () => {
     })
     const searchPayload = parseContractResponse(searchResult)
     assert.equal(searchPayload.ok, true)
+    const searchTotal = Number(searchPayload.data?.total ?? 0)
+    assert.ok(searchTotal > 0)
 
     const rawResult = await client.callTool({
       name: 'run_macos_script',

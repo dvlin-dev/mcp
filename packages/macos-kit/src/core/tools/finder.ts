@@ -1,3 +1,4 @@
+import os from 'node:os'
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ToolRuntimeContext } from '../server.js'
@@ -19,11 +20,11 @@ export function registerFinderTools(server: McpServer, context: ToolRuntimeConte
     templateId: 'finder_search_files',
     inputSchema: {
       query: z.string().describe('搜索关键词'),
-      location: z.string().optional().describe('搜索目录（默认 ~）'),
+      location: z.string().optional().describe('搜索目录（默认用户主目录绝对路径）'),
     },
     toInputData: (args) => ({
       query: args.query,
-      location: typeof args.location === 'string' ? args.location : '~',
+      location: typeof args.location === 'string' ? args.location : os.homedir(),
     }),
   })
 
