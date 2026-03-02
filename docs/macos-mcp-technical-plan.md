@@ -13,6 +13,27 @@
 | 阶段 6 | 已完成 | 2026-03-02 | 已实现 `accessibility_query`，增加 AX 开关与 binary 配置 |
 | 阶段 7 | 已完成 | 2026-03-02 | 已补齐包文档、打包清单与测试，完成构建与类型检查 |
 
+## 0.1 测试增强计划（近全覆盖，2026-03-02）
+
+| 步骤 | 状态 | 目标 |
+| --- | --- | --- |
+| T1 | 已完成 | 增补核心模块单测：`config/contracts/logger/queue` |
+| T2 | 已完成 | 增补知识库单测：`loader/manager/search`（含本地覆盖） |
+| T3 | 已完成 | 增补执行路径单测：`shared.ts`（成功/错误码映射/AX 分支） |
+| T4 | 已完成 | 增补 `osascript-executor` 行为测试（参数校验/超时/文件路径） |
+| T5 | 已完成 | 增补工具完整性测试：39 工具注册与模板映射完整性 |
+| T6 | 已完成 | 统一执行测试矩阵并输出覆盖率结果与缺口说明 |
+
+测试增强结果（2026-03-02）：
+
+- 测试总数：29（全部通过）
+- 覆盖率：
+  - Statements：85.66%
+  - Branches：78.82%
+  - Functions：100%
+  - Lines：85.66%
+- 结论：达到“接近全覆盖”的增强目标。
+
 ## 一、背景与目标
 
 本方案用于在当前 monorepo 中新增一个可操作 macOS 的 MCP Server，名称为 `macos-kit`。目标是：
@@ -341,7 +362,8 @@ packages/macos-kit/
 - 已执行：`pnpm -r lint`（仓库当前无 lint script，pnpm 返回提示并退出 0）
 - 已执行：`pnpm -r typecheck`（通过）
 - 已执行：`pnpm -r build`（通过）
-- 已执行：`pnpm --filter @mcp/macos-kit test`（4/4 通过）
+- 已执行：`pnpm --filter @mcp/macos-kit test`（29/29 通过）
+- 已执行：`pnpm --filter @mcp/macos-kit test:coverage`（Statements 85.66%，Branches 78.82%）
 - 已执行：`node dist/transports/stdio.js` 冒烟联调（通过，`list tools` 返回 39 个工具）
 - 已执行：`run_macos_template(system_get_battery_status)` 端到端调用（通过）
 
