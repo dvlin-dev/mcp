@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "dev:stdio": "tsx src/transports/stdio.ts",
-    "test": "tsx --test tests/placeholder-substitutor.test.ts tests/safety-policy.test.ts",
+    "test": "tsx --test tests/placeholder-substitutor.test.ts tests/safety-policy.test.ts tests/mcp-stdio.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
