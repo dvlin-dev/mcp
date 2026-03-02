@@ -1,5 +1,5 @@
 {
-  "name": "@mcp/email",
+  "name": "@moryflow/email",
   "version": "0.1.0",
   "description": "MCP Server for email operations (IMAP/SMTP)",
   "type": "module",

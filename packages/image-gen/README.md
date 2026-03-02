@@ -1,4 +1,4 @@
-# @mcp/image-gen
+# @moryflow/image-gen
 
 基于 OpenRouter API 的 AI 图片生成 MCP Server。
 

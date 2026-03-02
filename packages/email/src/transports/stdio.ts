@@ -7,7 +7,7 @@
  *
  * 使用方式：
  * - 开发：pnpm dev:stdio
- * - 发布后：npx @mcp/email
+ * - 发布后：npx @moryflow/email
  */
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createMcpServer } from '../core/server.js'
