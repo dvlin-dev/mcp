@@ -3,13 +3,14 @@ import path from 'node:path'
 import type { AppConfig } from '../config.js'
 import { buildFailure, type ContractResponse } from '../contracts.js'
 
-const HIGH_RISK_PATTERNS: RegExp[] = [
+const CRITICAL_RISK_PATTERNS: RegExp[] = [
   /rm\s+-rf\s+\//i,
-  /curl\s+[^\n|]*\|\s*(sh|bash)/i,
   /mkfs/i,
   /shutdown\s+-h/i,
   /reboot/i,
 ]
+
+const STRICT_EXTRA_RISK_PATTERNS: RegExp[] = [/curl\s+[^\n|]*\|\s*(sh|bash)/i]
 
 function isBinaryScript(buffer: Buffer): boolean {
   return buffer.includes(0)
@@ -75,13 +76,15 @@ export async function validateRawExecutionSafety(options: {
 
       if (config.MACOS_KIT_SAFE_MODE !== 'off' && !contentForRiskScan) {
         const scriptBuffer = await fs.readFile(scriptPath)
-        if (isBinaryScript(scriptBuffer)) {
+        if (config.MACOS_KIT_SAFE_MODE === 'strict' && isBinaryScript(scriptBuffer)) {
           return buildFailure('SAFETY_BLOCKED', '安全模式不允许执行二进制脚本文件', {
             hint: '请改用可读文本脚本，或将 MACOS_KIT_SAFE_MODE 设置为 off',
             retryable: false,
           })
         }
-        contentForRiskScan = scriptBuffer.toString('utf8')
+        if (!isBinaryScript(scriptBuffer)) {
+          contentForRiskScan = scriptBuffer.toString('utf8')
+        }
       }
     } catch (error) {
       return buildFailure('INVALID_INPUT', '脚本路径不可读或不存在', {
@@ -91,8 +94,15 @@ export async function validateRawExecutionSafety(options: {
     }
   }
 
-  if (config.MACOS_KIT_SAFE_MODE !== 'off' && contentForRiskScan) {
-    const hitPattern = HIGH_RISK_PATTERNS.find((pattern) =>
+  const riskPatterns =
+    config.MACOS_KIT_SAFE_MODE === 'strict'
+      ? [...CRITICAL_RISK_PATTERNS, ...STRICT_EXTRA_RISK_PATTERNS]
+      : config.MACOS_KIT_SAFE_MODE === 'balanced'
+        ? CRITICAL_RISK_PATTERNS
+        : []
+
+  if (riskPatterns.length > 0 && contentForRiskScan) {
+    const hitPattern = riskPatterns.find((pattern) =>
       pattern.test(contentForRiskScan)
     )
     if (hitPattern) {

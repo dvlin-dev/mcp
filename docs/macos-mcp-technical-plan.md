@@ -43,7 +43,7 @@
 1. 配置默认值切换为宽松策略：
    - `MACOS_KIT_ENABLE_RAW_SCRIPT=true`
    - `MACOS_KIT_ENABLE_AX_QUERY=true`
-   - `MACOS_KIT_SAFE_MODE=off`
+   - `MACOS_KIT_SAFE_MODE=balanced`
 2. 将 `MACOS_KIT_ALLOWED_SCRIPT_ROOTS` 调整为“按需生效”：
    - 未配置白名单时，`script_path` 不做目录限制；
    - 配置白名单后，继续执行 realpath + 子路径校验。
@@ -53,7 +53,7 @@
 
 风险说明：
 
-- 默认开启 raw/AX 且关闭安全扫描会降低默认安全性，仅适用于本机可信环境；
+- 默认开启 raw/AX 会放大误操作风险，建议在敏感环境下显式配置白名单与严格模式；
 - `accessibility_query` 仍依赖系统权限与 AX 可执行文件，无法通过代码绕过系统授权。
 
 执行结果（2026-03-02）：
@@ -61,13 +61,13 @@
 1. ✅ 已将默认值切换为宽松模式：
    - `MACOS_KIT_ENABLE_RAW_SCRIPT=true`
    - `MACOS_KIT_ENABLE_AX_QUERY=true`
-   - `MACOS_KIT_SAFE_MODE=off`
+   - `MACOS_KIT_SAFE_MODE=balanced`
 2. ✅ 已将 `MACOS_KIT_ALLOWED_SCRIPT_ROOTS` 改为按需生效：
    - 未配置白名单时允许 `script_path`；
    - 配置后继续执行 realpath 子路径校验。
 3. ✅ 已在 server 启动阶段增加宽松模式告警日志。
 4. ✅ 已同步 README 与技术方案默认值说明。
-5. ✅ 已补充测试并验证通过（新增 2 个用例，macos-kit 总测试 41/41 通过）。
+5. ✅ 已补充测试并验证通过（累计新增 5 个用例，macos-kit 总测试 44/44 通过）。
 
 ## 一、背景与目标
 
@@ -243,7 +243,7 @@ packages/macos-kit/
 - `MACOS_KIT_MAX_TIMEOUT_SECONDS`：默认 `120`
 - `MACOS_KIT_ALLOWED_SCRIPT_ROOTS`：脚本目录白名单（默认空，未配置时不限制目录）
 - `MACOS_KIT_KB_PATH`：本地知识库覆盖路径
-- `MACOS_KIT_SAFE_MODE`：`strict | balanced | off`，默认 `off`
+- `MACOS_KIT_SAFE_MODE`：`strict | balanced | off`，默认 `balanced`
 - `MACOS_KIT_LOG_LEVEL`：`debug | info | warn | error`
 - `MACOS_KIT_ENABLE_AX_QUERY`：是否开启 AX 工具（默认 `true`）
 - `MACOS_KIT_AX_BINARY_PATH`：AX 可执行文件路径（可选）
@@ -252,7 +252,10 @@ packages/macos-kit/
 
 1. 默认启用 raw 与 AX（零配置可用），并在启动时输出宽松模式告警日志。
 2. `script_path` 仅在配置 `MACOS_KIT_ALLOWED_SCRIPT_ROOTS` 时执行白名单 realpath 校验。
-3. 高风险模式检测由 `MACOS_KIT_SAFE_MODE` 控制；默认 `off`，需要时可切回 `strict`/`balanced`。
+3. 高风险模式检测由 `MACOS_KIT_SAFE_MODE` 控制；默认 `balanced`，需要时可切到更严格或更宽松模式。
+   - `strict`：关键危险命令 + `curl | sh` + 二进制脚本阻断
+   - `balanced`：仅关键危险命令阻断
+   - `off`：不做内容风险扫描
 4. 所有 raw 执行产生日志审计（来源、参数摘要、耗时、结果码）。
 
 ### 6.3 并发策略
@@ -403,7 +406,7 @@ packages/macos-kit/
 - 已执行：`run_macos_template(system_get_battery_status)` 端到端调用（通过）
 - 已执行：`pnpm --filter @moryflow/macos-kit typecheck`（通过）
 - 已执行：`pnpm --filter @moryflow/macos-kit build`（通过）
-- 已执行：`pnpm --filter @moryflow/macos-kit test`（41/41 通过，含零配置宽松模式新增用例）
+- 已执行：`pnpm --filter @moryflow/macos-kit test`（44/44 通过，含零配置宽松模式新增用例）
 
 ### 8.1 单元测试
 

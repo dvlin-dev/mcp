@@ -36,7 +36,7 @@ export const AppConfigSchema = z.object({
   MACOS_KIT_MAX_TIMEOUT_SECONDS: z.coerce.number().int().min(1).default(120),
   MACOS_KIT_ALLOWED_SCRIPT_ROOTS: CsvPathsSchema,
   MACOS_KIT_KB_PATH: z.string().optional(),
-  MACOS_KIT_SAFE_MODE: z.enum(['strict', 'balanced', 'off']).default('off'),
+  MACOS_KIT_SAFE_MODE: z.enum(['strict', 'balanced', 'off']).default('balanced'),
   MACOS_KIT_LOG_LEVEL: z
     .enum(['debug', 'info', 'warn', 'error'])
     .default('info'),

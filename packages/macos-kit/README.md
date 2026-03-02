@@ -28,7 +28,7 @@ pnpm --filter @moryflow/macos-kit dev:stdio
       "env": {
         "MACOS_KIT_ENABLE_RAW_SCRIPT": "true",
         "MACOS_KIT_ENABLE_AX_QUERY": "true",
-        "MACOS_KIT_SAFE_MODE": "off"
+        "MACOS_KIT_SAFE_MODE": "balanced"
       }
     }
   }
@@ -39,8 +39,14 @@ pnpm --filter @moryflow/macos-kit dev:stdio
 
 - 默认开启 `run_macos_script`（`MACOS_KIT_ENABLE_RAW_SCRIPT=true`）
 - 默认开启 `accessibility_query`（`MACOS_KIT_ENABLE_AX_QUERY=true`）
-- 默认关闭风险扫描（`MACOS_KIT_SAFE_MODE=off`）
+- 默认启用中等风险扫描（`MACOS_KIT_SAFE_MODE=balanced`）
 - 默认不限制 `script_path` 目录（`MACOS_KIT_ALLOWED_SCRIPT_ROOTS=[]`）
+
+`MACOS_KIT_SAFE_MODE` 分级：
+
+- `strict`：阻断关键危险命令 + `curl | sh`，并阻断二进制脚本文件
+- `balanced`：仅阻断关键危险命令（默认）
+- `off`：关闭风险扫描
 
 如需收紧权限，建议显式设置：
 
@@ -58,4 +64,4 @@ MACOS_KIT_ALLOWED_SCRIPT_ROOTS=/Users/you/scripts
 - `MACOS_KIT_KB_PATH`
 - `MACOS_KIT_ENABLE_AX_QUERY`（默认 `true`）
 - `MACOS_KIT_AX_BINARY_PATH`（默认 `ax`）
-- `MACOS_KIT_SAFE_MODE`（`strict | balanced | off`，默认 `off`）
+- `MACOS_KIT_SAFE_MODE`（`strict | balanced | off`，默认 `balanced`）
