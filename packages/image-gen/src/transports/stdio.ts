@@ -7,7 +7,7 @@
  *
  * 使用方式：
  * - 开发：pnpm dev:stdio
- * - 发布后：npx @mcp/image-gen
+ * - 发布后：npx @moryflow/image-gen
  */
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createMcpServer } from '../core/server.js'

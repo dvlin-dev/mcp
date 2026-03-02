@@ -21,6 +21,9 @@ function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     MACOS_KIT_LOG_LEVEL: 'info',
     MACOS_KIT_ENABLE_AX_QUERY: false,
     MACOS_KIT_AX_BINARY_PATH: 'ax',
+    MACOS_KIT_AX_AUTO_INSTALL: true,
+    MACOS_KIT_AX_DOWNLOAD_URL: undefined,
+    MACOS_KIT_AX_CACHE_DIR: undefined,
     ...overrides,
   }
 }

@@ -6,6 +6,7 @@ import type { AppConfig } from './config.js'
 import { Logger } from './logger.js'
 import { OsaScriptExecutor } from './executor/osascript-executor.js'
 import { SerialTaskQueue } from './executor/queue.js'
+import { prewarmAxBinary } from './executor/ax-binary.js'
 import { KnowledgeManager } from './knowledge/manager.js'
 import { registerAllTools } from './tools/index.js'
 
@@ -24,6 +25,18 @@ export function createMcpServer(config: AppConfig): McpServer {
   })
 
   const logger = new Logger(config.MACOS_KIT_LOG_LEVEL, 'macos-kit')
+  if (
+    config.MACOS_KIT_ENABLE_RAW_SCRIPT &&
+    config.MACOS_KIT_SAFE_MODE !== 'strict' &&
+    config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS.length === 0
+  ) {
+    logger.warn('当前运行在非 strict 模式：raw/AX 已开启且未限制脚本目录', {
+      enableRawScript: config.MACOS_KIT_ENABLE_RAW_SCRIPT,
+      enableAxQuery: config.MACOS_KIT_ENABLE_AX_QUERY,
+      safeMode: config.MACOS_KIT_SAFE_MODE,
+      allowedScriptRoots: config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS,
+    })
+  }
 
   const __filename = fileURLToPath(import.meta.url)
   const moduleDir = path.dirname(__filename)
@@ -45,6 +58,14 @@ export function createMcpServer(config: AppConfig): McpServer {
       embeddedRoot: embeddedKbRoot,
       localOverrideRoot: config.MACOS_KIT_KB_PATH,
     }),
+  }
+
+  if (config.MACOS_KIT_ENABLE_AX_QUERY) {
+    void prewarmAxBinary({ config, logger }).catch((error) => {
+      logger.warn('AX 预热流程异常', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    })
   }
 
   registerAllTools(server, runtime)

@@ -1,5 +1,5 @@
 {
-  "name": "@mcp/macos-kit",
+  "name": "@moryflow/macos-kit",
   "version": "0.1.0",
   "description": "MCP Server for macOS automation with AppleScript/JXA",
   "type": "module",

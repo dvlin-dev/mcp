@@ -1,4 +1,4 @@
-# @mcp/email
+# @moryflow/email
 
 Email MCP Server - 提供邮件操作能力的 MCP 服务。
 

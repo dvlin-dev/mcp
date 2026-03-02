@@ -5,6 +5,7 @@ import type { ToolRuntimeContext } from '../server.js'
 import { ExecutorError, type ScriptLanguage } from '../executor/osascript-executor.js'
 import { substitutePlaceholders } from '../executor/placeholder-substitutor.js'
 import { validateRawExecutionSafety } from '../executor/safety-policy.js'
+import { resolveAxBinaryPath } from '../executor/ax-binary.js'
 
 function isPermissionError(message?: string): boolean {
   if (!message) {
@@ -243,17 +244,25 @@ export async function executeAxQuery(options: {
   const start = Date.now()
 
   try {
+    const axBinaryPath = await resolveAxBinaryPath({
+      config: context.config,
+      logger: context.logger,
+    })
+    if (!axBinaryPath) {
+      return buildFailure('DEPENDENCY_MISSING', '未找到 AX 可执行文件', {
+        hint:
+          '请安装 ax，或配置 MACOS_KIT_AX_DOWNLOAD_URL 并保持 MACOS_KIT_AX_AUTO_INSTALL=true',
+        retryable: false,
+      })
+    }
+
     const { execFile } = await import('node:child_process')
     const { promisify } = await import('node:util')
     const execFileAsync = promisify(execFile)
 
-    const { stdout, stderr } = await execFileAsync(
-      context.config.MACOS_KIT_AX_BINARY_PATH,
-      [JSON.stringify(payload)],
-      {
-        timeout: timeout * 1000,
-      }
-    )
+    const { stdout, stderr } = await execFileAsync(axBinaryPath, [JSON.stringify(payload)], {
+      timeout: timeout * 1000,
+    })
 
     return buildSuccess(
       {
@@ -269,7 +278,8 @@ export async function executeAxQuery(options: {
     const message = error instanceof Error ? error.message : String(error)
     if (/ENOENT/.test(message)) {
       return buildFailure('DEPENDENCY_MISSING', '未找到 AX 可执行文件', {
-        hint: '请安装 ax 并配置 MACOS_KIT_AX_BINARY_PATH',
+        hint:
+          '请安装 ax，或配置 MACOS_KIT_AX_DOWNLOAD_URL 并保持 MACOS_KIT_AX_AUTO_INSTALL=true',
         retryable: false,
       })
     }

