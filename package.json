@@ -6,6 +6,10 @@
     "build": "pnpm -r build",
     "dev": "pnpm -r --parallel dev:stdio",
     "typecheck": "pnpm -r typecheck",
+    "macos-kit:build": "pnpm --filter ./packages/macos-kit --fail-if-no-match build",
+    "macos-kit:dev": "pnpm --filter ./packages/macos-kit --fail-if-no-match dev:stdio",
+    "macos-kit:test": "pnpm --filter ./packages/macos-kit --fail-if-no-match test",
+    "macos-kit:typecheck": "pnpm --filter ./packages/macos-kit --fail-if-no-match typecheck",
     "clean": "pnpm -r exec rm -rf dist node_modules"
   },
   "devDependencies": {

@@ -416,13 +416,18 @@ packages/macos-kit/
 - 已执行：`pnpm -r lint`（仓库当前无 lint script，pnpm 返回提示并退出 0）
 - 已执行：`pnpm -r typecheck`（通过）
 - 已执行：`pnpm -r build`（通过）
-- 已执行：`pnpm --filter @moryflow/macos-kit test`（29/29 通过）
-- 已执行：`pnpm --filter @moryflow/macos-kit test:coverage`（Statements 85.66%，Branches 78.82%）
+- 已执行：`pnpm --filter ./packages/macos-kit --fail-if-no-match test`（29/29 通过）
+- 已执行：`pnpm --filter ./packages/macos-kit --fail-if-no-match test:coverage`（Statements 85.66%，Branches 78.82%）
 - 已执行：`node dist/transports/stdio.js` 冒烟联调（通过，`list tools` 返回 39 个工具）
 - 已执行：`run_macos_template(system_get_battery_status)` 端到端调用（通过）
-- 已执行：`pnpm --filter @moryflow/macos-kit typecheck`（通过）
-- 已执行：`pnpm --filter @moryflow/macos-kit build`（通过）
-- 已执行：`pnpm --filter @moryflow/macos-kit test`（44/44 通过，含零配置宽松模式新增用例）
+- 已执行：`pnpm --filter ./packages/macos-kit --fail-if-no-match typecheck`（通过）
+- 已执行：`pnpm --filter ./packages/macos-kit --fail-if-no-match build`（通过）
+- 已执行：`pnpm --filter ./packages/macos-kit --fail-if-no-match test`（44/44 通过，含零配置宽松模式新增用例）
+
+命令规范补充（2026-03-03）：
+
+- 文档中的 workspace 命令统一使用路径过滤：`pnpm --filter ./packages/macos-kit --fail-if-no-match <script>`
+- 避免因包名重命名导致 `--filter` 无匹配但静默跳过。
 
 ### 8.1 单元测试
 

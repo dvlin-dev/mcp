@@ -13,8 +13,15 @@ macOS 自动化 MCP Server（stdio-only）。
 
 ```bash
 pnpm install
-pnpm --filter @moryflow/macos-kit build
-pnpm --filter @moryflow/macos-kit dev:stdio
+pnpm --filter ./packages/macos-kit --fail-if-no-match build
+pnpm --filter ./packages/macos-kit --fail-if-no-match dev:stdio
+```
+
+也可以在仓库根目录使用脚本别名：
+
+```bash
+pnpm macos-kit:build
+pnpm macos-kit:dev
 ```
 
 ## MCP 配置示例
