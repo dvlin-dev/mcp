@@ -7,6 +7,9 @@ argumentsPrompt: 无
 ---
 
 ```applescript
+use framework "Foundation"
+use scripting additions
+
 set targetRecipient to --MCP_INPUT:recipient
 set messageBody to --MCP_INPUT:body
 set autoSend to --MCP_INPUT:auto
@@ -19,7 +22,13 @@ if autoSend then
   end tell
   return "Message sent"
 else
-  do shell script "open " & quoted form of ("sms:" & targetRecipient)
-  return "Messages opened"
+  set smsURL to "sms:" & targetRecipient
+  if messageBody is not "" then
+    set rawBody to current application's NSString's stringWithString:messageBody
+    set encodedBody to (rawBody's stringByAddingPercentEncodingWithAllowedCharacters:(current application's NSCharacterSet's URLQueryAllowedCharacterSet())) as text
+    set smsURL to smsURL & "&body=" & encodedBody
+  end if
+  do shell script "open " & quoted form of smsURL
+  return "Messages opened with draft"
 end if
 ```

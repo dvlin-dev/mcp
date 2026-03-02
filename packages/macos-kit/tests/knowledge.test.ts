@@ -241,3 +241,17 @@ test('finder search_files 模板会将 ~ 解析为主目录路径', async () => 
   assert.ok(content.includes('locationPath starts with "~/" then'))
   assert.match(content, /POSIX path of \(path to home folder\)/)
 })
+
+test('messages_compose_message 在非自动发送分支会预填正文', async () => {
+  const templatePath = path.join(
+    process.cwd(),
+    'knowledge-base',
+    'messages',
+    'messages_compose_message.md'
+  )
+  const content = await fs.readFile(templatePath, 'utf8')
+  assert.match(content, /if messageBody is not "" then/)
+  assert.match(content, /stringByAddingPercentEncodingWithAllowedCharacters/)
+  assert.match(content, /smsURL & "&body=" & encodedBody/)
+  assert.match(content, /Messages opened with draft/)
+})
