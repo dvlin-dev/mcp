@@ -100,6 +100,7 @@ export async function executeTemplate(options: {
 
   const scriptContent = substitutePlaceholders({
     scriptContent: template.script,
+    language: template.language,
     inputData,
     args,
   })

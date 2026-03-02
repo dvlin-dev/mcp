@@ -71,6 +71,41 @@ test('loadKnowledgeFromPath 能加载分类、模板与 shared handlers', async 
   }
 })
 
+test('loadKnowledgeFromPath 遇到单个模板解析失败时不会中断整体加载', async () => {
+  const root = await makeTempDir('macos-kit-kb-')
+  const logger = new Logger('error', 'knowledge-test')
+
+  try {
+    await fs.mkdir(path.join(root, 'system'), { recursive: true })
+    await writeTemplate({
+      root,
+      category: 'system',
+      fileName: 'valid.md',
+      id: 'system_valid',
+      title: 'valid',
+      script: 'return "ok"',
+    })
+    await fs.writeFile(
+      path.join(root, 'system', 'broken.md'),
+      '---\nid: [broken\n---\n\n```applescript\nreturn "bad"\n```',
+      'utf8'
+    )
+
+    const loaded = await loadKnowledgeFromPath({
+      rootPath: root,
+      isLocal: false,
+      logger,
+    })
+
+    assert.equal(loaded.templates.length, 1)
+    assert.equal(loaded.templates[0].id, 'system_valid')
+    assert.equal(loaded.categories.length, 1)
+    assert.equal(loaded.categories[0].count, 1)
+  } finally {
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
+
 test('KnowledgeManager 支持本地覆盖与搜索', async () => {
   const embeddedRoot = await makeTempDir('macos-kit-embedded-')
   const localRoot = await makeTempDir('macos-kit-local-')

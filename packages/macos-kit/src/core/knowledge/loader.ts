@@ -69,6 +69,19 @@ export async function loadKnowledgeFromPath(options: {
     return { templates, categories, sharedHandlers }
   }
 
+  async function readTextFileSafe(filePath: string): Promise<string | null> {
+    try {
+      return await fs.readFile(filePath, 'utf8')
+    } catch (error) {
+      logger.warn('知识库文件读取失败', {
+        filePath,
+        isLocal,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return null
+    }
+  }
+
   for (const entry of rootEntries) {
     if (!entry.isDirectory()) {
       continue
@@ -76,7 +89,17 @@ export async function loadKnowledgeFromPath(options: {
 
     if (entry.name === '_shared_handlers') {
       const handlerRoot = path.join(rootPath, entry.name)
-      const files = await fs.readdir(handlerRoot, { withFileTypes: true })
+      let files: Dirent[]
+      try {
+        files = await fs.readdir(handlerRoot, { withFileTypes: true })
+      } catch (error) {
+        logger.warn('shared handlers 目录读取失败', {
+          handlerRoot,
+          isLocal,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        continue
+      }
       for (const file of files) {
         if (!file.isFile()) {
           continue
@@ -87,7 +110,10 @@ export async function loadKnowledgeFromPath(options: {
         }
 
         const filePath = path.join(handlerRoot, file.name)
-        const content = await fs.readFile(filePath, 'utf8')
+        const content = await readTextFileSafe(filePath)
+        if (content === null) {
+          continue
+        }
         sharedHandlers.push({
           name: path.basename(file.name, extension),
           language: extension === '.js' ? 'javascript' : 'applescript',
@@ -101,7 +127,18 @@ export async function loadKnowledgeFromPath(options: {
 
     const categoryId = entry.name
     const categoryPath = path.join(rootPath, categoryId)
-    const files = await fs.readdir(categoryPath, { withFileTypes: true })
+    let files: Dirent[]
+    try {
+      files = await fs.readdir(categoryPath, { withFileTypes: true })
+    } catch (error) {
+      logger.warn('分类目录读取失败', {
+        categoryId,
+        categoryPath,
+        isLocal,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      continue
+    }
     let categoryDescription = `${categoryId} 自动化脚本模板`
 
     for (const file of files) {
@@ -111,9 +148,22 @@ export async function loadKnowledgeFromPath(options: {
 
       const filePath = path.join(categoryPath, file.name)
       if (file.name === '_category_info.md') {
-        const infoParsed = matter(await fs.readFile(filePath, 'utf8'))
-        if (typeof infoParsed.data.description === 'string') {
-          categoryDescription = infoParsed.data.description
+        try {
+          const rawInfo = await readTextFileSafe(filePath)
+          if (!rawInfo) {
+            continue
+          }
+          const infoParsed = matter(rawInfo)
+          if (typeof infoParsed.data.description === 'string') {
+            categoryDescription = infoParsed.data.description
+          }
+        } catch (error) {
+          logger.warn('分类信息解析失败', {
+            categoryId,
+            filePath,
+            isLocal,
+            error: error instanceof Error ? error.message : String(error),
+          })
         }
         continue
       }
@@ -122,7 +172,24 @@ export async function loadKnowledgeFromPath(options: {
         continue
       }
 
-      const parsed = parseTemplateFile(await fs.readFile(filePath, 'utf8'))
+      const rawTemplate = await readTextFileSafe(filePath)
+      if (!rawTemplate) {
+        continue
+      }
+
+      let parsed: ReturnType<typeof parseTemplateFile>
+      try {
+        parsed = parseTemplateFile(rawTemplate)
+      } catch (error) {
+        logger.warn('模板解析失败，已跳过', {
+          filePath,
+          categoryId,
+          isLocal,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        continue
+      }
+
       if (!parsed) {
         continue
       }
