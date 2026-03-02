@@ -60,15 +60,17 @@ export async function validateRawExecutionSafety(options: {
 
   if (scriptPath) {
     try {
-      const allowed = await validateScriptPathInRoots(
-        scriptPath,
-        config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS
-      )
-      if (!allowed) {
-        return buildFailure('SAFETY_BLOCKED', '脚本路径不在白名单目录内', {
-          hint: '请配置 MACOS_KIT_ALLOWED_SCRIPT_ROOTS 并确保脚本位于该目录',
-          retryable: false,
-        })
+      if (config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS.length > 0) {
+        const allowed = await validateScriptPathInRoots(
+          scriptPath,
+          config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS
+        )
+        if (!allowed) {
+          return buildFailure('SAFETY_BLOCKED', '脚本路径不在白名单目录内', {
+            hint: '请配置 MACOS_KIT_ALLOWED_SCRIPT_ROOTS 并确保脚本位于该目录',
+            retryable: false,
+          })
+        }
       }
 
       if (config.MACOS_KIT_SAFE_MODE !== 'off' && !contentForRiskScan) {

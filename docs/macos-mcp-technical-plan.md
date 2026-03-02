@@ -34,6 +34,41 @@
   - Lines：85.66%
 - 结论：达到“接近全覆盖”的增强目标。
 
+## 0.2 零配置宽松模式改造计划（2026-03-02）
+
+目标：用户在不传任何环境变量时可直接使用全部核心能力；仅在用户显式配置时再收紧权限边界。
+
+计划项：
+
+1. 配置默认值切换为宽松策略：
+   - `MACOS_KIT_ENABLE_RAW_SCRIPT=true`
+   - `MACOS_KIT_ENABLE_AX_QUERY=true`
+   - `MACOS_KIT_SAFE_MODE=off`
+2. 将 `MACOS_KIT_ALLOWED_SCRIPT_ROOTS` 调整为“按需生效”：
+   - 未配置白名单时，`script_path` 不做目录限制；
+   - 配置白名单后，继续执行 realpath + 子路径校验。
+3. 启动时增加宽松模式告警日志，明确当前安全姿态。
+4. 同步更新 README 与技术方案中的默认值说明。
+5. 补充/调整测试，覆盖新默认值与白名单按需生效行为。
+
+风险说明：
+
+- 默认开启 raw/AX 且关闭安全扫描会降低默认安全性，仅适用于本机可信环境；
+- `accessibility_query` 仍依赖系统权限与 AX 可执行文件，无法通过代码绕过系统授权。
+
+执行结果（2026-03-02）：
+
+1. ✅ 已将默认值切换为宽松模式：
+   - `MACOS_KIT_ENABLE_RAW_SCRIPT=true`
+   - `MACOS_KIT_ENABLE_AX_QUERY=true`
+   - `MACOS_KIT_SAFE_MODE=off`
+2. ✅ 已将 `MACOS_KIT_ALLOWED_SCRIPT_ROOTS` 改为按需生效：
+   - 未配置白名单时允许 `script_path`；
+   - 配置后继续执行 realpath 子路径校验。
+3. ✅ 已在 server 启动阶段增加宽松模式告警日志。
+4. ✅ 已同步 README 与技术方案默认值说明。
+5. ✅ 已补充测试并验证通过（新增 2 个用例，macos-kit 总测试 41/41 通过）。
+
 ## 一、背景与目标
 
 本方案用于在当前 monorepo 中新增一个可操作 macOS 的 MCP Server，名称为 `macos-kit`。目标是：
@@ -72,7 +107,7 @@
 命名约定：
 
 - 包目录：`packages/macos-kit`
-- npm 包名：`@mcp/macos-kit`
+- npm 包名：`@moryflow/macos-kit`
 - MCP server id：`macos-kit`
 - bin 命令：`macos-kit-mcp`
 
@@ -135,7 +170,7 @@ packages/macos-kit/
 
 说明：
 
-- `run_macos_script` 默认关闭，仅在 `MACOS_KIT_ENABLE_RAW_SCRIPT=true` 时启用。
+- `run_macos_script` 默认开启，可通过 `MACOS_KIT_ENABLE_RAW_SCRIPT=false` 关闭。
 - 默认执行路径是“查模板 -> 执行模板”。
 
 ### 5.2 语义工具全集（P1，按域分组）
@@ -203,21 +238,21 @@ packages/macos-kit/
 
 ### 6.1 环境变量
 
-- `MACOS_KIT_ENABLE_RAW_SCRIPT`：默认 `false`
+- `MACOS_KIT_ENABLE_RAW_SCRIPT`：默认 `true`
 - `MACOS_KIT_DEFAULT_TIMEOUT_SECONDS`：默认 `30`
 - `MACOS_KIT_MAX_TIMEOUT_SECONDS`：默认 `120`
-- `MACOS_KIT_ALLOWED_SCRIPT_ROOTS`：脚本目录白名单
+- `MACOS_KIT_ALLOWED_SCRIPT_ROOTS`：脚本目录白名单（默认空，未配置时不限制目录）
 - `MACOS_KIT_KB_PATH`：本地知识库覆盖路径
-- `MACOS_KIT_SAFE_MODE`：`strict | balanced | off`，默认 `strict`
+- `MACOS_KIT_SAFE_MODE`：`strict | balanced | off`，默认 `off`
 - `MACOS_KIT_LOG_LEVEL`：`debug | info | warn | error`
-- `MACOS_KIT_ENABLE_AX_QUERY`：是否开启 AX 工具（默认 `false`）
+- `MACOS_KIT_ENABLE_AX_QUERY`：是否开启 AX 工具（默认 `true`）
 - `MACOS_KIT_AX_BINARY_PATH`：AX 可执行文件路径（可选）
 
 ### 6.2 安全分层策略
 
-1. 默认禁用原始脚本执行（仅模板执行）。
-2. 开启 raw 后，`script_path` 必须命中白名单，且使用 realpath 防逃逸。
-3. 高风险模式检测仅作兜底（不是唯一防线）。
+1. 默认启用 raw 与 AX（零配置可用），并在启动时输出宽松模式告警日志。
+2. `script_path` 仅在配置 `MACOS_KIT_ALLOWED_SCRIPT_ROOTS` 时执行白名单 realpath 校验。
+3. 高风险模式检测由 `MACOS_KIT_SAFE_MODE` 控制；默认 `off`，需要时可切回 `strict`/`balanced`。
 4. 所有 raw 执行产生日志审计（来源、参数摘要、耗时、结果码）。
 
 ### 6.3 并发策略
@@ -282,11 +317,11 @@ packages/macos-kit/
 
 - 输出：
   - `osascript-executor`、队列、超时/错误映射
-  - `run_macos_script`（默认禁用）
+  - `run_macos_script`（后续改造为默认开启）
   - `check_macos_permissions`
 - 验收：
   - 平台校验、超时校验、白名单校验可通过单测
-  - 未开启 raw 时调用返回明确错误码
+  - raw 开关关闭时调用返回明确错误码
 
 ### 阶段 2：知识库系统（P2-基础）
 
@@ -362,17 +397,20 @@ packages/macos-kit/
 - 已执行：`pnpm -r lint`（仓库当前无 lint script，pnpm 返回提示并退出 0）
 - 已执行：`pnpm -r typecheck`（通过）
 - 已执行：`pnpm -r build`（通过）
-- 已执行：`pnpm --filter @mcp/macos-kit test`（29/29 通过）
-- 已执行：`pnpm --filter @mcp/macos-kit test:coverage`（Statements 85.66%，Branches 78.82%）
+- 已执行：`pnpm --filter @moryflow/macos-kit test`（29/29 通过）
+- 已执行：`pnpm --filter @moryflow/macos-kit test:coverage`（Statements 85.66%，Branches 78.82%）
 - 已执行：`node dist/transports/stdio.js` 冒烟联调（通过，`list tools` 返回 39 个工具）
 - 已执行：`run_macos_template(system_get_battery_status)` 端到端调用（通过）
+- 已执行：`pnpm --filter @moryflow/macos-kit typecheck`（通过）
+- 已执行：`pnpm --filter @moryflow/macos-kit build`（通过）
+- 已执行：`pnpm --filter @moryflow/macos-kit test`（41/41 通过，含零配置宽松模式新增用例）
 
 ### 8.1 单元测试
 
 - 占位符替换
 - 输出契约序列化
 - 错误码映射（权限/超时/路径非法/平台不支持）
-- 路径白名单与 realpath 防逃逸
+- 路径白名单按需生效与 realpath 防逃逸
 
 ### 8.2 集成测试
 
@@ -392,7 +430,7 @@ packages/macos-kit/
 1. 权限风险（Automation/Accessibility/Full Disk Access）
    - 应对：`check_macos_permissions` + 标准化错误 hint。
 2. 原始脚本安全风险
-   - 应对：默认禁 raw + 白名单 + 审计日志。
+   - 应对：默认宽松模式下保留告警日志，生产环境建议显式开启白名单与 `strict` 安全模式。
 3. 系统版本差异风险
    - 应对：模板标注系统兼容说明，关键模板做版本回归。
 4. 功能面太大导致回归成本高

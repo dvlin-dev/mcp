@@ -65,6 +65,23 @@ test('validateRawExecutionSafety 在 strict 模式阻断高风险脚本', async 
   assert.equal(result?.error?.code, 'SAFETY_BLOCKED')
 })
 
+test('validateRawExecutionSafety 在未配置白名单时允许 scriptPath 执行', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'macos-kit-test-'))
+  const scriptPath = path.join(tempRoot, 'safe.scpt')
+  await fs.writeFile(scriptPath, 'return "ok"', 'utf8')
+
+  try {
+    const config = makeConfig({ MACOS_KIT_ALLOWED_SCRIPT_ROOTS: [] })
+    const result = await validateRawExecutionSafety({
+      config,
+      scriptPath,
+    })
+    assert.equal(result, null)
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true })
+  }
+})
+
 test('validateRawExecutionSafety 在 scriptPath 模式同样阻断高风险脚本', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'macos-kit-test-'))
   const scriptPath = path.join(tempRoot, 'danger.scpt')

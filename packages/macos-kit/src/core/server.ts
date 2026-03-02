@@ -24,6 +24,18 @@ export function createMcpServer(config: AppConfig): McpServer {
   })
 
   const logger = new Logger(config.MACOS_KIT_LOG_LEVEL, 'macos-kit')
+  if (
+    config.MACOS_KIT_ENABLE_RAW_SCRIPT &&
+    config.MACOS_KIT_SAFE_MODE === 'off' &&
+    config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS.length === 0
+  ) {
+    logger.warn('当前运行在零配置宽松模式：raw/AX 默认开启且未限制脚本目录', {
+      enableRawScript: config.MACOS_KIT_ENABLE_RAW_SCRIPT,
+      enableAxQuery: config.MACOS_KIT_ENABLE_AX_QUERY,
+      safeMode: config.MACOS_KIT_SAFE_MODE,
+      allowedScriptRoots: config.MACOS_KIT_ALLOWED_SCRIPT_ROOTS,
+    })
+  }
 
   const __filename = fileURLToPath(import.meta.url)
   const moduleDir = path.dirname(__filename)
